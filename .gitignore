@@ -1,0 +1,42 @@
+# macOS / editor
+.DS_Store
+.idea/
+.vscode/
+
+# Local helper folders/files
+.venv-docs/
+Untitled
+
+# Secrets and local configs
+.env
+.env.*
+wp-config.php
+*.pem
+*.key
+*.crt
+*.p12
+
+# Backups / dumps / archives
+*.sql
+*.sql.gz
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.bak
+*.old
+
+# Logs
+*.log
+debug.log
+error_log
+
+# Dependency/vendor folders (if appear inside theme)
+node_modules/
+vendor/
+
+# Build/cache artifacts
+dist/
+build/
+.cache/
+
