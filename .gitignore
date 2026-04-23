@@ -40,3 +40,12 @@ dist/
 build/
 .cache/
 
+chrysotile-theme/
+
+generatepress/
+generatepress-child/
+twentytwentyfive/
+twentytwentyfour/
+twentytwentythree/
+twentytwentytwo/
+index.php
