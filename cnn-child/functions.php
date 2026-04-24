@@ -503,6 +503,9 @@ function chrysotile_child_render_header_infobar_html( $infobar_data, $extra_clas
 		<?php if ( $has_weather ) : ?>
 		<div class="chrysotile-infobar-weather">
 			<span class="chrysotile-infobar-weather-icon chrysotile-infobar-weather-icon--<?php echo esc_attr( $infobar_data['weather']['icon'] ); ?>" aria-hidden="true"></span>
+			<?php if ( ! empty( $infobar_data['weather']['city'] ) ) : ?>
+				<span class="chrysotile-infobar-city"><?php echo esc_html( $infobar_data['weather']['city'] ); ?></span>
+			<?php endif; ?>
 			<span class="chrysotile-infobar-temp"><?php echo esc_html( $infobar_data['weather']['temp_label'] ); ?></span>
 		</div>
 		<?php endif; ?>
@@ -1309,252 +1312,6 @@ if ( ! function_exists( 'chrysotile_contact_set_debug_message' ) ) {
 	}
 }
 
-if ( ! function_exists( 'chrysotile_contact_table_name' ) ) {
-	/**
-	 * Contacts storage table name.
-	 *
-	 * @return string
-	 */
-	function chrysotile_contact_table_name() {
-		global $wpdb;
-
-		return $wpdb->prefix . 'chrysotile_contacts';
-	}
-}
-
-if ( ! function_exists( 'chrysotile_contact_install_storage' ) ) {
-	/**
-	 * Create storage table for contacts submissions.
-	 *
-	 * @return void
-	 */
-	function chrysotile_contact_install_storage() {
-		global $wpdb;
-
-		$installed_version = (int) get_option( 'chrysotile_contact_storage_version', 0 );
-		$current_version   = 1;
-
-		if ( $installed_version >= $current_version ) {
-			return;
-		}
-
-		$table   = chrysotile_contact_table_name();
-		$charset = $wpdb->get_charset_collate();
-
-		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
-		dbDelta(
-			"CREATE TABLE {$table} (
-				id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-				created_at DATETIME NOT NULL,
-				name VARCHAR(191) NOT NULL,
-				phone VARCHAR(64) NOT NULL,
-				email VARCHAR(191) NOT NULL,
-				message LONGTEXT NOT NULL,
-				consent TINYINT(1) NOT NULL DEFAULT 0,
-				status VARCHAR(20) NOT NULL DEFAULT 'pending',
-				attempts INT UNSIGNED NOT NULL DEFAULT 0,
-				last_error TEXT NULL,
-				telegram_message_id BIGINT NULL,
-				sent_at DATETIME NULL,
-				PRIMARY KEY (id),
-				KEY status (status),
-				KEY created_at (created_at)
-			) {$charset};"
-		);
-
-		update_option( 'chrysotile_contact_storage_version', $current_version );
-	}
-
-	add_action( 'init', 'chrysotile_contact_install_storage', 5 );
-}
-
-if ( ! function_exists( 'chrysotile_contact_create_entry' ) ) {
-	/**
-	 * Insert contacts form submission into local storage.
-	 *
-	 * @param array<string,mixed> $data Submission payload.
-	 * @return int Inserted row ID or 0.
-	 */
-	function chrysotile_contact_create_entry( $data ) {
-		global $wpdb;
-
-		$inserted = $wpdb->insert(
-			chrysotile_contact_table_name(),
-			array(
-				'created_at' => current_time( 'mysql' ),
-				'name'       => (string) $data['name'],
-				'phone'      => (string) $data['phone'],
-				'email'      => (string) $data['email'],
-				'message'    => (string) $data['message'],
-				'consent'    => ! empty( $data['consent'] ) ? 1 : 0,
-				'status'     => 'pending',
-				'attempts'   => 0,
-			),
-			array( '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%d' )
-		);
-
-		return $inserted ? (int) $wpdb->insert_id : 0;
-	}
-}
-
-if ( ! function_exists( 'chrysotile_contact_update_entry_result' ) ) {
-	/**
-	 * Update submission status after send attempt.
-	 *
-	 * @param int               $entry_id DB row ID.
-	 * @param bool              $ok       Send status.
-	 * @param string            $error    Error message.
-	 * @param int|string|null   $msg_id   Telegram message ID.
-	 * @return void
-	 */
-	function chrysotile_contact_update_entry_result( $entry_id, $ok, $error = '', $msg_id = null ) {
-		global $wpdb;
-
-		$entry_id = (int) $entry_id;
-		if ( $entry_id <= 0 ) {
-			return;
-		}
-
-		$row = $wpdb->get_row(
-			$wpdb->prepare(
-				'SELECT attempts FROM ' . chrysotile_contact_table_name() . ' WHERE id = %d LIMIT 1',
-				$entry_id
-			),
-			ARRAY_A
-		);
-		$attempts = isset( $row['attempts'] ) ? (int) $row['attempts'] : 0;
-
-		$update_data = array(
-			'status'    => $ok ? 'sent' : 'failed',
-			'attempts'  => $attempts + 1,
-			'last_error'=> $ok ? '' : (string) $error,
-			'sent_at'   => $ok ? current_time( 'mysql' ) : null,
-		);
-		$formats = array( '%s', '%d', '%s', $ok ? '%s' : '%s' );
-
-		if ( $ok && null !== $msg_id ) {
-			$update_data['telegram_message_id'] = (int) $msg_id;
-			$formats[]                          = '%d';
-		}
-
-		$wpdb->update(
-			chrysotile_contact_table_name(),
-			$update_data,
-			array( 'id' => $entry_id ),
-			$formats,
-			array( '%d' )
-		);
-	}
-}
-
-if ( ! function_exists( 'chrysotile_contact_send_to_telegram' ) ) {
-	/**
-	 * Send one message to Telegram (with transport fallbacks).
-	 *
-	 * @param string $name Name.
-	 * @param string $phone Phone.
-	 * @param string $email Email.
-	 * @param string $message Message text.
-	 * @return array{ok: bool, reason: string, debug: string, telegram_message_id: int}
-	 */
-	function chrysotile_contact_send_to_telegram( $name, $phone, $email, $message ) {
-		$bot_token = trim( (string) apply_filters( 'chrysotile_contact_telegram_bot_token', '8722464547:AAGCyJOQRGkD-MNVIxJjyYX-hdM7WIlspFo' ) );
-		$chat_id   = trim( (string) apply_filters( 'chrysotile_contact_telegram_chat_id', '-1003999440290' ) );
-
-		if ( '' === $bot_token || '' === $chat_id ) {
-			return array( 'ok' => false, 'reason' => 'telegram_config', 'debug' => 'Telegram token/chat_id missing', 'telegram_message_id' => 0 );
-		}
-
-		$text = sprintf(
-			"%s: %s\n%s: %s\n%s: %s\n%s: %s",
-			__( 'Имя', 'chrysotile-child' ),
-			$name,
-			__( 'Телефон', 'chrysotile-child' ),
-			$phone,
-			__( 'Почта', 'chrysotile-child' ),
-			$email,
-			__( 'Сообщение', 'chrysotile-child' ),
-			$message
-		);
-
-		$endpoint = sprintf( 'https://api.telegram.org/bot%s/sendMessage', $bot_token );
-		$post_args = array(
-			'timeout'     => 15,
-			'httpversion' => '1.1',
-			'body'        => array(
-				'chat_id' => $chat_id,
-				'text'    => $text,
-			),
-		);
-
-		$response = wp_remote_post( $endpoint, $post_args );
-
-		if ( is_wp_error( $response ) ) {
-			$get_response = wp_remote_get(
-				add_query_arg( array( 'chat_id' => $chat_id, 'text' => $text ), $endpoint ),
-				array( 'timeout' => 15, 'httpversion' => '1.1' )
-			);
-			if ( ! is_wp_error( $get_response ) && 200 === (int) wp_remote_retrieve_response_code( $get_response ) ) {
-				$get_body = json_decode( (string) wp_remote_retrieve_body( $get_response ), true );
-				if ( is_array( $get_body ) && ! empty( $get_body['ok'] ) ) {
-					return array( 'ok' => true, 'reason' => '', 'debug' => '', 'telegram_message_id' => isset( $get_body['result']['message_id'] ) ? (int) $get_body['result']['message_id'] : 0 );
-				}
-			}
-
-			$insecure_response = wp_remote_post(
-				$endpoint,
-				array_merge( $post_args, array( 'sslverify' => false ) )
-			);
-			if ( ! is_wp_error( $insecure_response ) && 200 === (int) wp_remote_retrieve_response_code( $insecure_response ) ) {
-				$insecure_body = json_decode( (string) wp_remote_retrieve_body( $insecure_response ), true );
-				if ( is_array( $insecure_body ) && ! empty( $insecure_body['ok'] ) ) {
-					return array( 'ok' => true, 'reason' => '', 'debug' => '', 'telegram_message_id' => isset( $insecure_body['result']['message_id'] ) ? (int) $insecure_body['result']['message_id'] : 0 );
-				}
-			}
-
-			$get_err      = is_wp_error( $get_response ) ? $get_response->get_error_message() : 'GET non-ok';
-			$insecure_err = is_wp_error( $insecure_response ) ? $insecure_response->get_error_message() : 'insecure non-ok';
-			$debug_msg    = 'HTTP transport error: POST=' . $response->get_error_message() . '; GET=' . $get_err . '; SSL_OFF=' . $insecure_err;
-			error_log( 'chrysotile_contact telegram wp_error: ' . $debug_msg ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
-
-			return array( 'ok' => false, 'reason' => 'telegram_http', 'debug' => $debug_msg, 'telegram_message_id' => 0 );
-		}
-
-		$http_code = (int) wp_remote_retrieve_response_code( $response );
-		$body      = json_decode( (string) wp_remote_retrieve_body( $response ), true );
-
-		if ( 200 === $http_code && is_array( $body ) && ! empty( $body['ok'] ) ) {
-			return array( 'ok' => true, 'reason' => '', 'debug' => '', 'telegram_message_id' => isset( $body['result']['message_id'] ) ? (int) $body['result']['message_id'] : 0 );
-		}
-
-		if ( is_array( $body ) && isset( $body['parameters']['migrate_to_chat_id'] ) && '' !== (string) $body['parameters']['migrate_to_chat_id'] ) {
-			$retry_response = wp_remote_post(
-				$endpoint,
-				array(
-					'timeout'     => 15,
-					'httpversion' => '1.1',
-					'body'        => array(
-						'chat_id' => (string) $body['parameters']['migrate_to_chat_id'],
-						'text'    => $text,
-					),
-				)
-			);
-			if ( ! is_wp_error( $retry_response ) && 200 === (int) wp_remote_retrieve_response_code( $retry_response ) ) {
-				$retry_body = json_decode( (string) wp_remote_retrieve_body( $retry_response ), true );
-				if ( is_array( $retry_body ) && ! empty( $retry_body['ok'] ) ) {
-					return array( 'ok' => true, 'reason' => '', 'debug' => '', 'telegram_message_id' => isset( $retry_body['result']['message_id'] ) ? (int) $retry_body['result']['message_id'] : 0 );
-				}
-			}
-		}
-
-		$description = is_array( $body ) && ! empty( $body['description'] ) ? (string) $body['description'] : 'unknown';
-		$debug_msg   = 'Telegram API: HTTP ' . $http_code . ', ' . $description;
-		error_log( 'chrysotile_contact telegram fail: ' . $debug_msg ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
-
-		return array( 'ok' => false, 'reason' => 'telegram_api', 'debug' => $debug_msg, 'telegram_message_id' => 0 );
-	}
-}
-
 if ( ! function_exists( 'chrysotile_contact_form_handler' ) ) {
 	/**
 	 * Validate phone: only phone-like chars and 10-15 digits.
@@ -1597,171 +1354,131 @@ if ( ! function_exists( 'chrysotile_contact_form_handler' ) ) {
 			chrysotile_contact_redirect( 'error', 'validation' );
 		}
 
-		$entry_id = chrysotile_contact_create_entry(
+		$bot_token = trim( (string) apply_filters( 'chrysotile_contact_telegram_bot_token', '8722464547:AAGCyJOQRGkD-MNVIxJjyYX-hdM7WIlspFo' ) );
+		$chat_id   = trim( (string) apply_filters( 'chrysotile_contact_telegram_chat_id', '-1003999440290' ) );
+
+		if ( '' === $bot_token || '' === $chat_id ) {
+			chrysotile_contact_redirect( 'error', 'telegram_config' );
+		}
+
+		$text = sprintf(
+			"%s: %s\n%s: %s\n%s: %s\n%s: %s",
+			__( 'Имя', 'chrysotile-child' ),
+			$name,
+			__( 'Телефон', 'chrysotile-child' ),
+			$phone,
+			__( 'Почта', 'chrysotile-child' ),
+			$email,
+			__( 'Сообщение', 'chrysotile-child' ),
+			$message
+		);
+
+		$endpoint = sprintf(
+			'https://api.telegram.org/bot%s/sendMessage',
+			$bot_token
+		);
+
+		$response = wp_remote_post(
+			$endpoint,
 			array(
-				'name'    => $name,
-				'phone'   => $phone,
-				'email'   => $email,
-				'message' => $message,
-				'consent' => true,
+				'timeout' => 15,
+				'httpversion' => '1.1',
+				'body'    => array(
+					'chat_id' => $chat_id,
+					'text'    => $text,
+				),
 			)
 		);
 
-		$send = chrysotile_contact_send_to_telegram( $name, $phone, $email, $message );
-		if ( ! empty( $send['ok'] ) ) {
-			chrysotile_contact_update_entry_result( $entry_id, true, '', (int) $send['telegram_message_id'] );
-			chrysotile_contact_redirect( 'sent' );
+		if ( is_wp_error( $response ) ) {
+			$get_url = add_query_arg(
+				array(
+					'chat_id' => $chat_id,
+					'text'    => $text,
+				),
+				$endpoint
+			);
+			$get_response = wp_remote_get(
+				$get_url,
+				array(
+					'timeout'     => 15,
+					'httpversion' => '1.1',
+				)
+			);
+			if ( ! is_wp_error( $get_response ) && 200 === (int) wp_remote_retrieve_response_code( $get_response ) ) {
+				$get_body = json_decode( (string) wp_remote_retrieve_body( $get_response ), true );
+				if ( is_array( $get_body ) && ! empty( $get_body['ok'] ) ) {
+					chrysotile_contact_redirect( 'sent' );
+				}
+			}
+
+			// Last-resort fallback for hosts with broken CA bundle.
+			$insecure_response = wp_remote_post(
+				$endpoint,
+				array(
+					'timeout'     => 15,
+					'httpversion' => '1.1',
+					'sslverify'   => false,
+					'body'        => array(
+						'chat_id' => $chat_id,
+						'text'    => $text,
+					),
+				)
+			);
+			if ( ! is_wp_error( $insecure_response ) && 200 === (int) wp_remote_retrieve_response_code( $insecure_response ) ) {
+				$insecure_body = json_decode( (string) wp_remote_retrieve_body( $insecure_response ), true );
+				if ( is_array( $insecure_body ) && ! empty( $insecure_body['ok'] ) ) {
+					chrysotile_contact_redirect( 'sent' );
+				}
+			}
+
+			$get_err      = is_wp_error( $get_response ) ? $get_response->get_error_message() : 'GET non-ok';
+			$insecure_err = is_wp_error( $insecure_response ) ? $insecure_response->get_error_message() : 'insecure non-ok';
+			$debug_msg    = 'HTTP transport error: POST=' . $response->get_error_message() . '; GET=' . $get_err . '; SSL_OFF=' . $insecure_err;
+			chrysotile_contact_set_debug_message( $debug_msg );
+			error_log( 'chrysotile_contact telegram wp_error: ' . $debug_msg ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+			chrysotile_contact_redirect( 'error', 'telegram_http' );
 		}
 
-		chrysotile_contact_update_entry_result( $entry_id, false, (string) $send['debug'] );
-		chrysotile_contact_set_debug_message( (string) $send['debug'] );
-		chrysotile_contact_redirect( 'error', (string) $send['reason'] );
+		$http_code = (int) wp_remote_retrieve_response_code( $response );
+		$body = json_decode( (string) wp_remote_retrieve_body( $response ), true );
+		if ( 200 !== $http_code || ! is_array( $body ) || empty( $body['ok'] ) ) {
+			// Если группа была мигрирована в supergroup, повторяем запрос с новым chat_id.
+			if ( is_array( $body )
+				&& isset( $body['parameters']['migrate_to_chat_id'] )
+				&& '' !== (string) $body['parameters']['migrate_to_chat_id'] ) {
+				$migrated_chat_id = (string) $body['parameters']['migrate_to_chat_id'];
+				$retry_response   = wp_remote_post(
+					$endpoint,
+					array(
+						'timeout' => 15,
+						'httpversion' => '1.1',
+						'body'    => array(
+							'chat_id' => $migrated_chat_id,
+							'text'    => $text,
+						),
+					)
+				);
+
+				if ( ! is_wp_error( $retry_response ) && 200 === (int) wp_remote_retrieve_response_code( $retry_response ) ) {
+					$retry_body = json_decode( (string) wp_remote_retrieve_body( $retry_response ), true );
+					if ( is_array( $retry_body ) && ! empty( $retry_body['ok'] ) ) {
+						chrysotile_contact_redirect( 'sent' );
+					}
+				}
+			}
+
+			$description = is_array( $body ) && ! empty( $body['description'] ) ? (string) $body['description'] : 'unknown';
+			chrysotile_contact_set_debug_message( 'Telegram API: HTTP ' . $http_code . ', ' . $description );
+			error_log( 'chrysotile_contact telegram fail: HTTP ' . $http_code . ', ' . $description ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+			chrysotile_contact_redirect( 'error', 'telegram_api' );
+		}
+
+		chrysotile_contact_redirect( 'sent' );
 	}
 
 	add_action( 'admin_post_nopriv_chrysotile_contact', 'chrysotile_contact_form_handler' );
 	add_action( 'admin_post_chrysotile_contact', 'chrysotile_contact_form_handler' );
-}
-
-if ( ! function_exists( 'chrysotile_contact_admin_menu' ) ) {
-	/**
-	 * Add admin page with saved contact submissions.
-	 */
-	function chrysotile_contact_admin_menu() {
-		add_management_page(
-			__( 'Заявки контактов', 'chrysotile-child' ),
-			__( 'Заявки контактов', 'chrysotile-child' ),
-			'manage_options',
-			'chrysotile-contact-submissions',
-			'chrysotile_contact_admin_page_render'
-		);
-	}
-	add_action( 'admin_menu', 'chrysotile_contact_admin_menu' );
-}
-
-if ( ! function_exists( 'chrysotile_contact_retry_handler' ) ) {
-	/**
-	 * Retry Telegram delivery for one stored submission.
-	 *
-	 * @return void
-	 */
-	function chrysotile_contact_retry_handler() {
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_die( esc_html__( 'Недостаточно прав.', 'chrysotile-child' ) );
-		}
-
-		check_admin_referer( 'chrysotile_contact_retry' );
-
-		$entry_id = isset( $_POST['entry_id'] ) ? (int) $_POST['entry_id'] : 0;
-		if ( $entry_id <= 0 ) {
-			wp_safe_redirect( admin_url( 'tools.php?page=chrysotile-contact-submissions&retry=error' ) );
-			exit;
-		}
-
-		global $wpdb;
-		$row = $wpdb->get_row(
-			$wpdb->prepare(
-				'SELECT * FROM ' . chrysotile_contact_table_name() . ' WHERE id = %d LIMIT 1',
-				$entry_id
-			),
-			ARRAY_A
-		);
-		if ( ! is_array( $row ) ) {
-			wp_safe_redirect( admin_url( 'tools.php?page=chrysotile-contact-submissions&retry=notfound' ) );
-			exit;
-		}
-
-		$send = chrysotile_contact_send_to_telegram(
-			(string) $row['name'],
-			(string) $row['phone'],
-			(string) $row['email'],
-			(string) $row['message']
-		);
-
-		if ( ! empty( $send['ok'] ) ) {
-			chrysotile_contact_update_entry_result( $entry_id, true, '', (int) $send['telegram_message_id'] );
-			wp_safe_redirect( admin_url( 'tools.php?page=chrysotile-contact-submissions&retry=sent' ) );
-			exit;
-		}
-
-		chrysotile_contact_update_entry_result( $entry_id, false, (string) $send['debug'] );
-		wp_safe_redirect( admin_url( 'tools.php?page=chrysotile-contact-submissions&retry=error' ) );
-		exit;
-	}
-	add_action( 'admin_post_chrysotile_contact_retry', 'chrysotile_contact_retry_handler' );
-}
-
-if ( ! function_exists( 'chrysotile_contact_admin_page_render' ) ) {
-	/**
-	 * Render contacts submissions admin table.
-	 *
-	 * @return void
-	 */
-	function chrysotile_contact_admin_page_render() {
-		if ( ! current_user_can( 'manage_options' ) ) {
-			return;
-		}
-
-		global $wpdb;
-		$rows = $wpdb->get_results(
-			'SELECT * FROM ' . chrysotile_contact_table_name() . ' ORDER BY id DESC LIMIT 300',
-			ARRAY_A
-		);
-		$retry = isset( $_GET['retry'] ) ? sanitize_key( wp_unslash( $_GET['retry'] ) ) : '';
-		?>
-		<div class="wrap">
-			<h1><?php esc_html_e( 'Заявки с формы «Контакты»', 'chrysotile-child' ); ?></h1>
-			<?php if ( 'sent' === $retry ) : ?>
-				<div class="notice notice-success is-dismissible"><p><?php esc_html_e( 'Повторная отправка выполнена.', 'chrysotile-child' ); ?></p></div>
-			<?php elseif ( 'error' === $retry ) : ?>
-				<div class="notice notice-error is-dismissible"><p><?php esc_html_e( 'Не удалось отправить в Telegram. Смотрите текст ошибки в колонке "Ошибка".', 'chrysotile-child' ); ?></p></div>
-			<?php endif; ?>
-
-			<table class="widefat striped">
-				<thead>
-					<tr>
-						<th><?php esc_html_e( 'ID', 'chrysotile-child' ); ?></th>
-						<th><?php esc_html_e( 'Дата', 'chrysotile-child' ); ?></th>
-						<th><?php esc_html_e( 'Имя', 'chrysotile-child' ); ?></th>
-						<th><?php esc_html_e( 'Телефон', 'chrysotile-child' ); ?></th>
-						<th><?php esc_html_e( 'Email', 'chrysotile-child' ); ?></th>
-						<th><?php esc_html_e( 'Сообщение', 'chrysotile-child' ); ?></th>
-						<th><?php esc_html_e( 'Статус', 'chrysotile-child' ); ?></th>
-						<th><?php esc_html_e( 'Попытки', 'chrysotile-child' ); ?></th>
-						<th><?php esc_html_e( 'Ошибка', 'chrysotile-child' ); ?></th>
-						<th><?php esc_html_e( 'Действие', 'chrysotile-child' ); ?></th>
-					</tr>
-				</thead>
-				<tbody>
-					<?php if ( empty( $rows ) ) : ?>
-						<tr><td colspan="10"><?php esc_html_e( 'Пока нет заявок.', 'chrysotile-child' ); ?></td></tr>
-					<?php else : ?>
-						<?php foreach ( $rows as $row ) : ?>
-							<tr>
-								<td><?php echo (int) $row['id']; ?></td>
-								<td><?php echo esc_html( (string) $row['created_at'] ); ?></td>
-								<td><?php echo esc_html( (string) $row['name'] ); ?></td>
-								<td><?php echo esc_html( (string) $row['phone'] ); ?></td>
-								<td><?php echo esc_html( (string) $row['email'] ); ?></td>
-								<td style="max-width:360px; white-space:pre-wrap;"><?php echo esc_html( (string) $row['message'] ); ?></td>
-								<td><?php echo esc_html( (string) $row['status'] ); ?></td>
-								<td><?php echo (int) $row['attempts']; ?></td>
-								<td style="max-width:280px; white-space:pre-wrap;"><?php echo esc_html( (string) $row['last_error'] ); ?></td>
-								<td>
-									<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
-										<input type="hidden" name="action" value="chrysotile_contact_retry" />
-										<input type="hidden" name="entry_id" value="<?php echo (int) $row['id']; ?>" />
-										<?php wp_nonce_field( 'chrysotile_contact_retry' ); ?>
-										<button type="submit" class="button button-secondary"><?php esc_html_e( 'Отправить повторно', 'chrysotile-child' ); ?></button>
-									</form>
-								</td>
-							</tr>
-						<?php endforeach; ?>
-					<?php endif; ?>
-				</tbody>
-			</table>
-		</div>
-		<?php
-	}
 }
 
 if ( ! function_exists( 'chrysotile_contacts_yandex_map_embed_url' ) ) {
@@ -1922,6 +1639,38 @@ function chrysotile_child_post_data_latin_slug_from_title( $data, $postarr ) {
 }
 
 add_filter( 'wp_insert_post_data', 'chrysotile_child_post_data_latin_slug_from_title', 99, 2 );
+
+/**
+ * Desktop only: remove "Контакты" item from "Ещё" dropdown.
+ *
+ * Mobile burger menu remains unchanged.
+ */
+add_action(
+	'wp_footer',
+	function () {
+		?>
+		<script>
+			(function () {
+				if (window.matchMedia && window.matchMedia('(max-width: 1023px)').matches) {
+					return;
+				}
+				var dropdown = document.getElementById('chrysotile-nav-more-dropdown');
+				if (!dropdown) {
+					return;
+				}
+				var links = dropdown.querySelectorAll('a[role="menuitem"]');
+				links.forEach(function (link) {
+					var label = (link.textContent || '').trim().toLowerCase();
+					if (label === 'контакты') {
+						link.remove();
+					}
+				});
+			})();
+		</script>
+		<?php
+	},
+	50
+);
 
 add_action(
 	'init',

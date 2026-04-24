@@ -119,6 +119,7 @@ $chrysotile_nav_fallback = home_url( '/' );
 				<div class="chrysotile-main-nav-links">
 					<a class="chrysotile-nav-link" href="<?php echo esc_url( $chrysotile_nav_v_strane ? $chrysotile_nav_v_strane : $chrysotile_nav_fallback ); ?>"><?php esc_html_e( 'В стране', 'chrysotile-child' ); ?></a>
 					<a class="chrysotile-nav-link" href="<?php echo esc_url( $chrysotile_nav_v_region ? $chrysotile_nav_v_region : $chrysotile_nav_fallback ); ?>"><?php esc_html_e( 'В регионе', 'chrysotile-child' ); ?></a>
+					<a class="chrysotile-nav-link" href="<?php echo esc_url( $chrysotile_nav_kontakty ? $chrysotile_nav_kontakty : $chrysotile_nav_fallback ); ?>"><?php esc_html_e( 'Контакты', 'chrysotile-child' ); ?></a>
 					<div class="chrysotile-nav-more-wrap">
 						<button
 							type="button"
@@ -132,7 +133,6 @@ $chrysotile_nav_fallback = home_url( '/' );
 							<a role="menuitem" href="<?php echo esc_url( $chrysotile_nav_people ? $chrysotile_nav_people : $chrysotile_nav_fallback ); ?>"><?php esc_html_e( 'Люди', 'chrysotile-child' ); ?></a>
 							<a role="menuitem" href="<?php echo esc_url( $chrysotile_nav_society ? $chrysotile_nav_society : $chrysotile_nav_fallback ); ?>"><?php esc_html_e( 'Общество', 'chrysotile-child' ); ?></a>
 							<a role="menuitem" href="<?php echo esc_url( $chrysotile_nav_special ? $chrysotile_nav_special : $chrysotile_nav_fallback ); ?>"><?php esc_html_e( 'Спецпроекты', 'chrysotile-child' ); ?></a>
-							<a role="menuitem" href="<?php echo esc_url( $chrysotile_nav_kontakty ? $chrysotile_nav_kontakty : $chrysotile_nav_fallback ); ?>"><?php esc_html_e( 'Контакты', 'chrysotile-child' ); ?></a>
 						</div>
 					</div>
 				</div>
