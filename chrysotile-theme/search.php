@@ -38,19 +38,22 @@ $query    = get_search_query();
 					while ( have_posts() ) :
 						the_post();
 						?>
-						<article class="chrysotile-cat-list-item">
+					<article class="chrysotile-cat-list-item<?php if ( ! has_post_thumbnail() ) echo ' no-thumb'; ?>">
+						<?php if ( has_post_thumbnail() ) : ?>
 							<a class="chrysotile-cat-list-thumb" href="<?php the_permalink(); ?>">
-								<?php if ( has_post_thumbnail() ) : ?>
-									<?php the_post_thumbnail( 'medium_large' ); ?>
-								<?php endif; ?>
+								<?php the_post_thumbnail( 'medium_large' ); ?>
 								<span class="chrysotile-cat-date-badge"><?php echo esc_html( get_the_date() ); ?></span>
 							</a>
-							<div class="chrysotile-cat-list-body">
-								<a href="<?php the_permalink(); ?>">
-									<h2><?php the_title(); ?></h2>
-								</a>
-							</div>
-						</article>
+						<?php endif; ?>
+						<div class="chrysotile-cat-list-body">
+							<a href="<?php the_permalink(); ?>">
+								<?php if ( ! has_post_thumbnail() ) : ?>
+									<span class="chrysotile-no-thumb-date"><?php echo esc_html( get_the_date() ); ?></span>
+								<?php endif; ?>
+								<h2><?php the_title(); ?></h2>
+							</a>
+						</div>
+					</article>
 					<?php endwhile; ?>
 				</div>
 			<?php else : ?>
@@ -59,17 +62,20 @@ $query    = get_search_query();
 					while ( have_posts() ) :
 						the_post();
 						?>
-						<article class="chrysotile-cat-grid-card">
+					<article class="chrysotile-cat-grid-card<?php if ( ! has_post_thumbnail() ) echo ' no-thumb'; ?>">
+						<?php if ( has_post_thumbnail() ) : ?>
 							<a class="chrysotile-cat-grid-thumb" href="<?php the_permalink(); ?>">
-								<?php if ( has_post_thumbnail() ) : ?>
-									<?php the_post_thumbnail( 'medium_large' ); ?>
-								<?php endif; ?>
+								<?php the_post_thumbnail( 'medium_large' ); ?>
 								<span class="chrysotile-cat-date-badge"><?php echo esc_html( get_the_date() ); ?></span>
 							</a>
-							<a class="chrysotile-cat-grid-title" href="<?php the_permalink(); ?>">
-								<h2><?php the_title(); ?></h2>
-							</a>
-						</article>
+						<?php endif; ?>
+						<a class="chrysotile-cat-grid-title" href="<?php the_permalink(); ?>">
+							<?php if ( ! has_post_thumbnail() ) : ?>
+								<span class="chrysotile-no-thumb-date"><?php echo esc_html( get_the_date() ); ?></span>
+							<?php endif; ?>
+							<h2><?php the_title(); ?></h2>
+						</a>
+					</article>
 					<?php endwhile; ?>
 				</div>
 			<?php endif; ?>
@@ -110,17 +116,17 @@ $query    = get_search_query();
 					while ( $popular_posts->have_posts() ) :
 						$popular_posts->the_post();
 						?>
-						<li class="chrysotile-sidebar-popular-item">
+					<li class="chrysotile-sidebar-popular-item<?php if ( ! has_post_thumbnail() ) echo ' no-thumb'; ?>">
+						<?php if ( has_post_thumbnail() ) : ?>
 							<a class="chrysotile-sidebar-popular-thumb" href="<?php the_permalink(); ?>">
-								<?php if ( has_post_thumbnail() ) : ?>
-									<?php the_post_thumbnail( 'thumbnail' ); ?>
-								<?php endif; ?>
+								<?php the_post_thumbnail( 'thumbnail' ); ?>
 							</a>
-							<div class="chrysotile-sidebar-popular-body">
-								<a href="<?php the_permalink(); ?>"><?php the_title(); ?></a>
-								<div class="chrysotile-meta"><?php echo esc_html( get_the_date() ); ?></div>
-							</div>
-						</li>
+						<?php endif; ?>
+						<div class="chrysotile-sidebar-popular-body">
+							<a href="<?php the_permalink(); ?>"><?php the_title(); ?></a>
+							<div class="chrysotile-meta"><?php echo esc_html( get_the_date() ); ?></div>
+						</div>
+					</li>
 					<?php endwhile; ?>
 					<?php wp_reset_postdata(); ?>
 				</ul>
