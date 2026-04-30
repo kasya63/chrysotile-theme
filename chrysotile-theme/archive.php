@@ -82,22 +82,19 @@ if ( is_tag() ) {
 					while ( have_posts() ) :
 						the_post();
 						?>
-					<article class="chrysotile-cat-list-item<?php if ( ! has_post_thumbnail() ) echo ' no-thumb'; ?>">
-						<?php if ( has_post_thumbnail() ) : ?>
+						<article class="chrysotile-cat-list-item">
 							<a class="chrysotile-cat-list-thumb" href="<?php the_permalink(); ?>">
-								<?php the_post_thumbnail( 'medium_large' ); ?>
+								<?php if ( has_post_thumbnail() ) : ?>
+									<?php the_post_thumbnail( 'medium_large' ); ?>
+								<?php endif; ?>
 								<span class="chrysotile-cat-date-badge"><?php echo esc_html( get_the_date() ); ?></span>
 							</a>
-						<?php endif; ?>
-						<div class="chrysotile-cat-list-body">
-							<a href="<?php the_permalink(); ?>">
-								<?php if ( ! has_post_thumbnail() ) : ?>
-									<span class="chrysotile-no-thumb-date"><?php echo esc_html( get_the_date() ); ?></span>
-								<?php endif; ?>
-								<h2><?php the_title(); ?></h2>
-							</a>
-						</div>
-					</article>
+							<div class="chrysotile-cat-list-body">
+								<a href="<?php the_permalink(); ?>">
+									<h2><?php the_title(); ?></h2>
+								</a>
+							</div>
+						</article>
 					<?php endwhile; ?>
 				</div>
 			<?php else : ?>
@@ -106,20 +103,17 @@ if ( is_tag() ) {
 					while ( have_posts() ) :
 						the_post();
 						?>
-					<article class="chrysotile-cat-grid-card<?php if ( ! has_post_thumbnail() ) echo ' no-thumb'; ?>">
-						<?php if ( has_post_thumbnail() ) : ?>
+						<article class="chrysotile-cat-grid-card">
 							<a class="chrysotile-cat-grid-thumb" href="<?php the_permalink(); ?>">
-								<?php the_post_thumbnail( 'medium_large' ); ?>
+								<?php if ( has_post_thumbnail() ) : ?>
+									<?php the_post_thumbnail( 'medium_large' ); ?>
+								<?php endif; ?>
 								<span class="chrysotile-cat-date-badge"><?php echo esc_html( get_the_date() ); ?></span>
 							</a>
-						<?php endif; ?>
-						<a class="chrysotile-cat-grid-title" href="<?php the_permalink(); ?>">
-							<?php if ( ! has_post_thumbnail() ) : ?>
-								<span class="chrysotile-no-thumb-date"><?php echo esc_html( get_the_date() ); ?></span>
-							<?php endif; ?>
-							<h2><?php the_title(); ?></h2>
-						</a>
-					</article>
+							<a class="chrysotile-cat-grid-title" href="<?php the_permalink(); ?>">
+								<h2><?php the_title(); ?></h2>
+							</a>
+						</article>
 					<?php endwhile; ?>
 				</div>
 			<?php endif; ?>
@@ -149,17 +143,17 @@ if ( is_tag() ) {
 					while ( $popular_posts->have_posts() ) :
 						$popular_posts->the_post();
 						?>
-					<li class="chrysotile-sidebar-popular-item<?php if ( ! has_post_thumbnail() ) echo ' no-thumb'; ?>">
-						<?php if ( has_post_thumbnail() ) : ?>
+						<li class="chrysotile-sidebar-popular-item">
 							<a class="chrysotile-sidebar-popular-thumb" href="<?php the_permalink(); ?>">
-								<?php the_post_thumbnail( 'thumbnail' ); ?>
+								<?php if ( has_post_thumbnail() ) : ?>
+									<?php the_post_thumbnail( 'thumbnail' ); ?>
+								<?php endif; ?>
 							</a>
-						<?php endif; ?>
-						<div class="chrysotile-sidebar-popular-body">
-							<a href="<?php the_permalink(); ?>"><?php the_title(); ?></a>
-							<div class="chrysotile-meta"><?php echo esc_html( get_the_date() ); ?></div>
-						</div>
-					</li>
+							<div class="chrysotile-sidebar-popular-body">
+								<a href="<?php the_permalink(); ?>"><?php the_title(); ?></a>
+								<div class="chrysotile-meta"><?php echo esc_html( get_the_date() ); ?></div>
+							</div>
+						</li>
 					<?php endwhile; ?>
 					<?php wp_reset_postdata(); ?>
 				</ul>
