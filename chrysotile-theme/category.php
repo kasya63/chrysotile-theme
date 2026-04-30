@@ -59,18 +59,18 @@ if ( $is_parent_hub ) {
 								while ( $child_posts->have_posts() ) :
 									$child_posts->the_post();
 									?>
-									<article class="chrysotile-stream-card">
-										<a class="chrysotile-stream-card__link" href="<?php the_permalink(); ?>">
+								<article class="chrysotile-stream-card<?php if ( ! has_post_thumbnail() ) echo ' no-thumb'; ?>">
+									<a class="chrysotile-stream-card__link" href="<?php the_permalink(); ?>">
+										<?php if ( has_post_thumbnail() ) : ?>
 											<span class="chrysotile-thumb-frame chrysotile-thumb-frame--stream">
-												<?php if ( has_post_thumbnail() ) : ?>
-													<?php the_post_thumbnail( 'medium_large' ); ?>
-												<?php endif; ?>
+												<?php the_post_thumbnail( 'medium_large' ); ?>
 											</span>
-											<span class="chrysotile-stream-card__cap">
-												<h3 class="chrysotile-stream-card__title"><?php the_title(); ?></h3>
-											</span>
-										</a>
-									</article>
+										<?php endif; ?>
+										<span class="chrysotile-stream-card__cap">
+											<h3 class="chrysotile-stream-card__title"><?php the_title(); ?></h3>
+										</span>
+									</a>
+								</article>
 									<?php
 								endwhile;
 								$child_posts->rewind_posts();
@@ -86,41 +86,47 @@ if ( $is_parent_hub ) {
 									++$chrysotile_parent_hub_mobile;
 									if ( 1 === $chrysotile_parent_hub_mobile ) :
 										?>
-										<article class="chrysotile-lead-card chrysotile-front-stream-mobile-lead">
-											<a class="chrysotile-lead-card__link" href="<?php the_permalink(); ?>">
+									<article class="chrysotile-lead-card chrysotile-front-stream-mobile-lead<?php if ( ! has_post_thumbnail() ) echo ' no-thumb'; ?>">
+										<a class="chrysotile-lead-card__link" href="<?php the_permalink(); ?>">
+											<?php if ( has_post_thumbnail() ) : ?>
 												<span class="chrysotile-thumb-frame chrysotile-thumb-frame--lead">
-													<?php if ( has_post_thumbnail() ) : ?>
-														<?php the_post_thumbnail( 'large' ); ?>
-													<?php endif; ?>
+													<?php the_post_thumbnail( 'large' ); ?>
 													<time class="chrysotile-thumb-date chrysotile-thumb-date--lead" datetime="<?php echo esc_attr( get_the_date( DATE_W3C ) ); ?>"><?php echo esc_html( get_the_date() ); ?></time>
 												</span>
-												<span class="chrysotile-lead-card__cap">
-													<h3 class="chrysotile-lead-card__title"><?php the_title(); ?></h3>
-												</span>
-											</a>
-										</article>
-										<?php
-									else :
-										?>
-										<article class="chrysotile-cat-list-item">
-											<a class="chrysotile-cat-list-thumb" href="<?php the_permalink(); ?>">
-												<?php if ( has_post_thumbnail() ) : ?>
-													<?php the_post_thumbnail( 'medium_large' ); ?>
+											<?php endif; ?>
+											<span class="chrysotile-lead-card__cap">
+												<?php if ( ! has_post_thumbnail() ) : ?>
+													<span class="chrysotile-no-thumb-date"><?php echo esc_html( get_the_date() ); ?></span>
 												<?php endif; ?>
+												<h3 class="chrysotile-lead-card__title"><?php the_title(); ?></h3>
+											</span>
+										</a>
+									</article>
+										<?php
+								else :
+									?>
+									<article class="chrysotile-cat-list-item<?php if ( ! has_post_thumbnail() ) echo ' no-thumb'; ?>">
+										<?php if ( has_post_thumbnail() ) : ?>
+											<a class="chrysotile-cat-list-thumb" href="<?php the_permalink(); ?>">
+												<?php the_post_thumbnail( 'medium_large' ); ?>
 												<span class="chrysotile-cat-date-badge">
 													<?php echo esc_html( get_the_date() ); ?>
 												</span>
 											</a>
-											<div class="chrysotile-cat-list-body">
-												<a href="<?php the_permalink(); ?>">
-													<h2><?php the_title(); ?></h2>
-												</a>
-											</div>
-										</article>
-										<?php
-									endif;
-								endwhile;
-								wp_reset_postdata();
+										<?php endif; ?>
+										<div class="chrysotile-cat-list-body">
+											<a href="<?php the_permalink(); ?>">
+												<?php if ( ! has_post_thumbnail() ) : ?>
+													<span class="chrysotile-no-thumb-date"><?php echo esc_html( get_the_date() ); ?></span>
+												<?php endif; ?>
+												<h2><?php the_title(); ?></h2>
+											</a>
+										</div>
+									</article>
+									<?php
+								endif;
+							endwhile;
+							wp_reset_postdata();
 								?>
 							</div>
 						</div>
@@ -157,23 +163,23 @@ if ( $is_parent_hub ) {
 					<h3><?php esc_html_e( 'Популярное в разделе', 'chrysotile-child' ); ?></h3>
 					<ul class="chrysotile-sidebar-popular">
 						<?php
-						while ( $popular_posts->have_posts() ) :
-							$popular_posts->the_post();
-							?>
-							<li class="chrysotile-sidebar-popular-item">
+					while ( $popular_posts->have_posts() ) :
+						$popular_posts->the_post();
+						?>
+						<li class="chrysotile-sidebar-popular-item<?php if ( ! has_post_thumbnail() ) echo ' no-thumb'; ?>">
+							<?php if ( has_post_thumbnail() ) : ?>
 								<a class="chrysotile-sidebar-popular-thumb" href="<?php the_permalink(); ?>">
-									<?php if ( has_post_thumbnail() ) : ?>
-										<?php the_post_thumbnail( 'thumbnail' ); ?>
-									<?php endif; ?>
+									<?php the_post_thumbnail( 'thumbnail' ); ?>
 								</a>
-								<div class="chrysotile-sidebar-popular-body">
-									<a href="<?php the_permalink(); ?>"><?php the_title(); ?></a>
-									<div class="chrysotile-meta"><?php echo esc_html( get_the_date() ); ?></div>
-								</div>
-							</li>
-							<?php
-						endwhile;
-						wp_reset_postdata();
+							<?php endif; ?>
+							<div class="chrysotile-sidebar-popular-body">
+								<a href="<?php the_permalink(); ?>"><?php the_title(); ?></a>
+								<div class="chrysotile-meta"><?php echo esc_html( get_the_date() ); ?></div>
+							</div>
+						</li>
+						<?php
+					endwhile;
+					wp_reset_postdata();
 						?>
 					</ul>
 				</section>
@@ -217,49 +223,55 @@ $list_url = esc_url( add_query_arg( 'view', 'list' ) );
 	<div class="chrysotile-category-main">
 		<?php if ( have_posts() ) : ?>
 			<?php if ( 'list' === $view ) : ?>
-				<div class="chrysotile-cat-list-view" aria-label="<?php esc_attr_e( 'Список материалов рубрики', 'chrysotile-child' ); ?>">
-					<?php
-					while ( have_posts() ) :
-						the_post();
-						?>
-						<article class="chrysotile-cat-list-item">
+					<div class="chrysotile-cat-list-view" aria-label="<?php esc_attr_e( 'Список материалов рубрики', 'chrysotile-child' ); ?>">
+				<?php
+				while ( have_posts() ) :
+					the_post();
+					?>
+					<article class="chrysotile-cat-list-item<?php if ( ! has_post_thumbnail() ) echo ' no-thumb'; ?>">
+						<?php if ( has_post_thumbnail() ) : ?>
 							<a class="chrysotile-cat-list-thumb" href="<?php the_permalink(); ?>">
-								<?php if ( has_post_thumbnail() ) : ?>
-									<?php the_post_thumbnail( 'medium_large' ); ?>
-								<?php endif; ?>
+								<?php the_post_thumbnail( 'medium_large' ); ?>
 								<span class="chrysotile-cat-date-badge">
 									<?php echo esc_html( get_the_date() ); ?>
 								</span>
 							</a>
-							<div class="chrysotile-cat-list-body">
-								<a href="<?php the_permalink(); ?>">
-									<h2><?php the_title(); ?></h2>
-								</a>
-							</div>
-						</article>
-					<?php endwhile; ?>
-				</div>
-			<?php else : ?>
-				<div class="chrysotile-cat-grid" aria-label="<?php esc_attr_e( 'Материалы рубрики', 'chrysotile-child' ); ?>">
-					<?php
-					while ( have_posts() ) :
-						the_post();
-						?>
-						<article class="chrysotile-cat-grid-card">
-							<a class="chrysotile-cat-grid-thumb" href="<?php the_permalink(); ?>">
-								<?php if ( has_post_thumbnail() ) : ?>
-									<?php the_post_thumbnail( 'medium_large' ); ?>
+						<?php endif; ?>
+						<div class="chrysotile-cat-list-body">
+							<a href="<?php the_permalink(); ?>">
+								<?php if ( ! has_post_thumbnail() ) : ?>
+									<span class="chrysotile-no-thumb-date"><?php echo esc_html( get_the_date() ); ?></span>
 								<?php endif; ?>
-								<span class="chrysotile-cat-date-badge">
-									<?php echo esc_html( get_the_date() ); ?>
-								</span>
-							</a>
-							<a class="chrysotile-cat-grid-title" href="<?php the_permalink(); ?>">
 								<h2><?php the_title(); ?></h2>
 							</a>
-						</article>
-					<?php endwhile; ?>
-				</div>
+						</div>
+					</article>
+				<?php endwhile; ?>
+			</div>
+			<?php else : ?>
+				<div class="chrysotile-cat-grid" aria-label="<?php esc_attr_e( 'Материалы рубрики', 'chrysotile-child' ); ?>">
+				<?php
+				while ( have_posts() ) :
+					the_post();
+					?>
+					<article class="chrysotile-cat-grid-card<?php if ( ! has_post_thumbnail() ) echo ' no-thumb'; ?>">
+						<?php if ( has_post_thumbnail() ) : ?>
+							<a class="chrysotile-cat-grid-thumb" href="<?php the_permalink(); ?>">
+								<?php the_post_thumbnail( 'medium_large' ); ?>
+								<span class="chrysotile-cat-date-badge">
+									<?php echo esc_html( get_the_date() ); ?>
+								</span>
+							</a>
+						<?php endif; ?>
+						<a class="chrysotile-cat-grid-title" href="<?php the_permalink(); ?>">
+							<?php if ( ! has_post_thumbnail() ) : ?>
+								<span class="chrysotile-no-thumb-date"><?php echo esc_html( get_the_date() ); ?></span>
+							<?php endif; ?>
+							<h2><?php the_title(); ?></h2>
+						</a>
+					</article>
+				<?php endwhile; ?>
+			</div>
 			<?php endif; ?>
 
 			<?php
@@ -298,12 +310,12 @@ $list_url = esc_url( add_query_arg( 'view', 'list' ) );
 					while ( $popular_posts->have_posts() ) :
 						$popular_posts->the_post();
 						?>
-						<li class="chrysotile-sidebar-popular-item">
-							<a class="chrysotile-sidebar-popular-thumb" href="<?php the_permalink(); ?>">
-								<?php if ( has_post_thumbnail() ) : ?>
+						<li class="chrysotile-sidebar-popular-item<?php if ( ! has_post_thumbnail() ) echo ' no-thumb'; ?>">
+							<?php if ( has_post_thumbnail() ) : ?>
+								<a class="chrysotile-sidebar-popular-thumb" href="<?php the_permalink(); ?>">
 									<?php the_post_thumbnail( 'thumbnail' ); ?>
-								<?php endif; ?>
-							</a>
+								</a>
+							<?php endif; ?>
 							<div class="chrysotile-sidebar-popular-body">
 								<a href="<?php the_permalink(); ?>"><?php the_title(); ?></a>
 								<div class="chrysotile-meta"><?php echo esc_html( get_the_date() ); ?></div>
