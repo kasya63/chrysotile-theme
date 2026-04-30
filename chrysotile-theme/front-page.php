@@ -40,59 +40,68 @@ $hero_posts = new WP_Query( $hero_query_args );
 			<div class="chrysotile-front-rail">
 				<?php foreach ( $left_posts as $post ) : ?>
 					<?php setup_postdata( $post ); ?>
-					<article class="chrysotile-front-mini-card">
-						<a class="chrysotile-front-mini-card__link" href="<?php the_permalink(); ?>">
+				<article class="chrysotile-front-mini-card<?php if ( ! has_post_thumbnail() ) echo ' no-thumb'; ?>">
+					<a class="chrysotile-front-mini-card__link" href="<?php the_permalink(); ?>">
+						<?php if ( has_post_thumbnail() ) : ?>
 							<span class="chrysotile-thumb-frame chrysotile-thumb-frame--mini">
-								<?php if ( has_post_thumbnail() ) : ?>
-									<?php the_post_thumbnail( 'medium_large' ); ?>
-								<?php endif; ?>
+								<?php the_post_thumbnail( 'medium_large' ); ?>
 								<time class="chrysotile-thumb-date" datetime="<?php echo esc_attr( get_the_date( DATE_W3C ) ); ?>"><?php echo esc_html( get_the_date() ); ?></time>
 							</span>
-							<span class="chrysotile-front-mini-card__cap">
-								<h3 class="chrysotile-front-mini-card__title"><?php the_title(); ?></h3>
-							</span>
-						</a>
-					</article>
-				<?php endforeach; ?>
-			</div>
-
-			<div class="chrysotile-front-main">
-				<?php
-				$post = $center_post;
-				setup_postdata( $post );
-				?>
-				<article class="chrysotile-lead-card">
-					<a class="chrysotile-lead-card__link" href="<?php the_permalink(); ?>">
-						<span class="chrysotile-thumb-frame chrysotile-thumb-frame--lead">
-							<?php if ( has_post_thumbnail() ) : ?>
-								<?php the_post_thumbnail( 'large' ); ?>
+						<?php endif; ?>
+						<span class="chrysotile-front-mini-card__cap">
+							<?php if ( ! has_post_thumbnail() ) : ?>
+								<span class="chrysotile-no-thumb-date"><?php echo esc_html( get_the_date() ); ?></span>
 							<?php endif; ?>
-							<time class="chrysotile-thumb-date chrysotile-thumb-date--lead" datetime="<?php echo esc_attr( get_the_date( DATE_W3C ) ); ?>"><?php echo esc_html( get_the_date() ); ?></time>
-						</span>
-						<span class="chrysotile-lead-card__cap">
-							<h1 class="chrysotile-lead-card__title"><?php the_title(); ?></h1>
+							<h3 class="chrysotile-front-mini-card__title"><?php the_title(); ?></h3>
 						</span>
 					</a>
 				</article>
-			</div>
+			<?php endforeach; ?>
+		</div>
 
-			<div class="chrysotile-front-rail">
-				<?php foreach ( $right_posts as $post ) : ?>
-					<?php setup_postdata( $post ); ?>
-					<article class="chrysotile-front-mini-card">
-						<a class="chrysotile-front-mini-card__link" href="<?php the_permalink(); ?>">
+		<div class="chrysotile-front-main">
+			<?php
+			$post = $center_post;
+			setup_postdata( $post );
+			?>
+			<article class="chrysotile-lead-card<?php if ( ! has_post_thumbnail() ) echo ' no-thumb'; ?>">
+				<a class="chrysotile-lead-card__link" href="<?php the_permalink(); ?>">
+					<?php if ( has_post_thumbnail() ) : ?>
+						<span class="chrysotile-thumb-frame chrysotile-thumb-frame--lead">
+							<?php the_post_thumbnail( 'large' ); ?>
+							<time class="chrysotile-thumb-date chrysotile-thumb-date--lead" datetime="<?php echo esc_attr( get_the_date( DATE_W3C ) ); ?>"><?php echo esc_html( get_the_date() ); ?></time>
+						</span>
+					<?php endif; ?>
+					<span class="chrysotile-lead-card__cap">
+						<?php if ( ! has_post_thumbnail() ) : ?>
+							<span class="chrysotile-no-thumb-date"><?php echo esc_html( get_the_date() ); ?></span>
+						<?php endif; ?>
+						<h1 class="chrysotile-lead-card__title"><?php the_title(); ?></h1>
+					</span>
+				</a>
+			</article>
+		</div>
+
+		<div class="chrysotile-front-rail">
+			<?php foreach ( $right_posts as $post ) : ?>
+				<?php setup_postdata( $post ); ?>
+				<article class="chrysotile-front-mini-card<?php if ( ! has_post_thumbnail() ) echo ' no-thumb'; ?>">
+					<a class="chrysotile-front-mini-card__link" href="<?php the_permalink(); ?>">
+						<?php if ( has_post_thumbnail() ) : ?>
 							<span class="chrysotile-thumb-frame chrysotile-thumb-frame--mini">
-								<?php if ( has_post_thumbnail() ) : ?>
-									<?php the_post_thumbnail( 'medium_large' ); ?>
-								<?php endif; ?>
+								<?php the_post_thumbnail( 'medium_large' ); ?>
 								<time class="chrysotile-thumb-date" datetime="<?php echo esc_attr( get_the_date( DATE_W3C ) ); ?>"><?php echo esc_html( get_the_date() ); ?></time>
 							</span>
-							<span class="chrysotile-front-mini-card__cap">
-								<h3 class="chrysotile-front-mini-card__title"><?php the_title(); ?></h3>
-							</span>
-						</a>
-					</article>
-				<?php endforeach; ?>
+						<?php endif; ?>
+						<span class="chrysotile-front-mini-card__cap">
+							<?php if ( ! has_post_thumbnail() ) : ?>
+								<span class="chrysotile-no-thumb-date"><?php echo esc_html( get_the_date() ); ?></span>
+							<?php endif; ?>
+							<h3 class="chrysotile-front-mini-card__title"><?php the_title(); ?></h3>
+						</span>
+					</a>
+				</article>
+			<?php endforeach; ?>
 			</div>
 		</section>
 	</div>
@@ -158,21 +167,21 @@ foreach ( $chrysotile_front_streams as $stream ) :
 						while ( $category_posts->have_posts() ) :
 							$category_posts->the_post();
 							?>
-							<article class="chrysotile-stream-card">
-								<a class="chrysotile-stream-card__link" href="<?php the_permalink(); ?>">
+						<article class="chrysotile-stream-card<?php if ( ! has_post_thumbnail() ) echo ' no-thumb'; ?>">
+							<a class="chrysotile-stream-card__link" href="<?php the_permalink(); ?>">
+								<?php if ( has_post_thumbnail() ) : ?>
 									<span class="chrysotile-thumb-frame chrysotile-thumb-frame--stream">
-										<?php if ( has_post_thumbnail() ) : ?>
-											<?php the_post_thumbnail( 'medium_large' ); ?>
-										<?php endif; ?>
+										<?php the_post_thumbnail( 'medium_large' ); ?>
 									</span>
-									<span class="chrysotile-stream-card__cap">
-										<h3 class="chrysotile-stream-card__title"><?php the_title(); ?></h3>
-									</span>
-								</a>
-							</article>
-							<?php
-						endwhile;
-						$category_posts->rewind_posts();
+								<?php endif; ?>
+								<span class="chrysotile-stream-card__cap">
+									<h3 class="chrysotile-stream-card__title"><?php the_title(); ?></h3>
+								</span>
+							</a>
+						</article>
+						<?php
+					endwhile;
+					$category_posts->rewind_posts();
 						?>
 					</div>
 				</div>
@@ -185,35 +194,41 @@ foreach ( $chrysotile_front_streams as $stream ) :
 							++$chrysotile_stream_mobile_i;
 							if ( 1 === $chrysotile_stream_mobile_i ) :
 								?>
-								<article class="chrysotile-lead-card chrysotile-front-stream-mobile-lead">
-									<a class="chrysotile-lead-card__link" href="<?php the_permalink(); ?>">
+						<article class="chrysotile-lead-card chrysotile-front-stream-mobile-lead<?php if ( ! has_post_thumbnail() ) echo ' no-thumb'; ?>">
+								<a class="chrysotile-lead-card__link" href="<?php the_permalink(); ?>">
+									<?php if ( has_post_thumbnail() ) : ?>
 										<span class="chrysotile-thumb-frame chrysotile-thumb-frame--lead">
-											<?php if ( has_post_thumbnail() ) : ?>
-												<?php the_post_thumbnail( 'large' ); ?>
-											<?php endif; ?>
+											<?php the_post_thumbnail( 'large' ); ?>
 											<time class="chrysotile-thumb-date chrysotile-thumb-date--lead" datetime="<?php echo esc_attr( get_the_date( DATE_W3C ) ); ?>"><?php echo esc_html( get_the_date() ); ?></time>
 										</span>
-										<span class="chrysotile-lead-card__cap">
-											<h3 class="chrysotile-lead-card__title"><?php the_title(); ?></h3>
-										</span>
-									</a>
-								</article>
+									<?php endif; ?>
+									<span class="chrysotile-lead-card__cap">
+										<?php if ( ! has_post_thumbnail() ) : ?>
+											<span class="chrysotile-no-thumb-date"><?php echo esc_html( get_the_date() ); ?></span>
+										<?php endif; ?>
+										<h3 class="chrysotile-lead-card__title"><?php the_title(); ?></h3>
+									</span>
+								</a>
+							</article>
 								<?php
 							else :
 								?>
-								<article class="chrysotile-cat-list-item">
+							<article class="chrysotile-cat-list-item<?php if ( ! has_post_thumbnail() ) echo ' no-thumb'; ?>">
+								<?php if ( has_post_thumbnail() ) : ?>
 									<a class="chrysotile-cat-list-thumb" href="<?php the_permalink(); ?>">
-										<?php if ( has_post_thumbnail() ) : ?>
-											<?php the_post_thumbnail( 'medium_large' ); ?>
-										<?php endif; ?>
+										<?php the_post_thumbnail( 'medium_large' ); ?>
 										<span class="chrysotile-cat-date-badge"><?php echo esc_html( get_the_date() ); ?></span>
 									</a>
-									<div class="chrysotile-cat-list-body">
-										<a href="<?php the_permalink(); ?>">
-											<h2><?php the_title(); ?></h2>
-										</a>
-									</div>
-								</article>
+								<?php endif; ?>
+								<div class="chrysotile-cat-list-body">
+									<a href="<?php the_permalink(); ?>">
+										<?php if ( ! has_post_thumbnail() ) : ?>
+											<span class="chrysotile-no-thumb-date"><?php echo esc_html( get_the_date() ); ?></span>
+										<?php endif; ?>
+										<h2><?php the_title(); ?></h2>
+									</a>
+								</div>
+							</article>
 								<?php
 							endif;
 						endwhile;
