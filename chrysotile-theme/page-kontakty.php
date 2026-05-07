@@ -34,19 +34,25 @@ if ( is_string( $contact_debug ) && '' !== $contact_debug ) {
 			</header>
 
 			<div class="chrysotile-contacts-body">
-				<?php if ( 'error' === $contact_status ) : ?>
-					<p class="chrysotile-contacts-notice chrysotile-contacts-notice--error" role="alert">
-						<?php esc_html_e( 'Не удалось отправить. Проверьте поля и попробуйте снова.', 'chrysotile-child' ); ?>
-						<?php if ( current_user_can( 'manage_options' ) && '' !== $contact_reason ) : ?>
+			<?php if ( 'error' === $contact_status ) : ?>
+				<p class="chrysotile-contacts-notice chrysotile-contacts-notice--error" role="alert">
+					<?php
+					if ( 'invalid_phone' === $contact_reason ) {
+						esc_html_e( 'Укажите казахстанский номер телефона: +7 7XX XXX XX XX или 8 7XX XXX XX XX.', 'chrysotile-child' );
+					} else {
+						esc_html_e( 'Не удалось отправить. Проверьте поля и попробуйте снова.', 'chrysotile-child' );
+					}
+					?>
+					<?php if ( current_user_can( 'manage_options' ) && '' !== $contact_reason ) : ?>
+						<br />
+						<small><?php echo esc_html( 'Debug: ' . $contact_reason ); ?></small>
+						<?php if ( is_string( $contact_debug ) && '' !== $contact_debug ) : ?>
 							<br />
-							<small><?php echo esc_html( 'Debug: ' . $contact_reason ); ?></small>
-							<?php if ( is_string( $contact_debug ) && '' !== $contact_debug ) : ?>
-								<br />
-								<small><?php echo esc_html( $contact_debug ); ?></small>
-							<?php endif; ?>
+							<small><?php echo esc_html( $contact_debug ); ?></small>
 						<?php endif; ?>
-					</p>
-				<?php endif; ?>
+					<?php endif; ?>
+				</p>
+			<?php endif; ?>
 
 				<div class="chrysotile-contacts-inner">
 					<?php
@@ -84,7 +90,7 @@ if ( is_string( $contact_debug ) && '' !== $contact_debug ) {
 									</p>
 									<p class="chrysotile-contacts-field">
 										<label for="chrysotile_contact_phone"><?php esc_html_e( 'Телефон', 'chrysotile-child' ); ?></label>
-										<input type="tel" id="chrysotile_contact_phone" name="chrysotile_contact_phone" required autocomplete="tel" pattern="^\+?[0-9\-\s\(\)]{10,25}$" minlength="10" maxlength="25" title="<?php esc_attr_e( 'Введите реальный номер телефона (10-15 цифр, можно с +, пробелами, скобками и дефисами).', 'chrysotile-child' ); ?>" />
+										<input type="tel" id="chrysotile_contact_phone" name="chrysotile_contact_phone" required autocomplete="tel" pattern="^\+?[78]?\s?\(?7\d{2}\)?\s?\d{3}[\s\-]?\d{2}[\s\-]?\d{2}$" minlength="10" maxlength="20" placeholder="+7 700 000 00 00" title="<?php esc_attr_e( 'Введите казахстанский номер телефона: +7 7XX XXX XX XX или 8 7XX XXX XX XX', 'chrysotile-child' ); ?>" />
 									</p>
 									<p class="chrysotile-contacts-field">
 										<label for="chrysotile_contact_email"><?php esc_html_e( 'Email', 'chrysotile-child' ); ?></label>

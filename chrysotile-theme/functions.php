@@ -1568,14 +1568,33 @@ if ( ! function_exists( 'chrysotile_contact_form_handler' ) ) {
 			return false;
 		}
 
-		if ( 1 !== preg_match( '/^\+?[0-9\-\s\(\)]+$/', $phone ) ) {
+		// Strip all formatting characters, keep leading +.
+		$stripped = preg_replace( '/[\s\-\(\)\.]+/', '', $phone );
+
+		// Allow only digits and an optional leading +.
+		if ( ! preg_match( '/^\+?\d+$/', $stripped ) ) {
 			return false;
 		}
 
-		$digits = preg_replace( '/\D+/', '', $phone );
-		$len    = strlen( (string) $digits );
+		// Normalise to digits-only for pattern matching.
+		$digits = ltrim( $stripped, '+' );
 
-		return $len >= 10 && $len <= 15;
+		// Kazakhstan numbers only:
+		//   International : +7 7XX XXX XX XX  → digits = 77XXXXXXXXX  (11 digits, starts 77)
+		//   With leading 8: 8 7XX XXX XX XX   → digits = 87XXXXXXXXX  (11 digits, starts 87)
+		//   Local 10-digit: 7XX XXX XX XX     → digits = 7XXXXXXXXX   (10 digits, starts 7)
+		// In all cases the operator/area code digit is 7.
+		if ( preg_match( '/^77\d{9}$/', $digits ) ) {
+			return true; // +77… or 77…
+		}
+		if ( preg_match( '/^87\d{9}$/', $digits ) ) {
+			return true; // 87…
+		}
+		if ( preg_match( '/^7\d{9}$/', $digits ) ) {
+			return true; // local 10-digit 7XXXXXXXXX
+		}
+
+		return false;
 	}
 
 	/**
@@ -1593,8 +1612,12 @@ if ( ! function_exists( 'chrysotile_contact_form_handler' ) ) {
 		$message = isset( $_POST['chrysotile_contact_message'] ) ? sanitize_textarea_field( wp_unslash( $_POST['chrysotile_contact_message'] ) ) : '';
 		$consent = isset( $_POST['chrysotile_contact_consent'] ) ? sanitize_text_field( wp_unslash( $_POST['chrysotile_contact_consent'] ) ) : '';
 
-		if ( '' === $name || '' === $phone || '' === $message || ! is_email( $email ) || '1' !== $consent || ! chrysotile_contact_is_valid_phone( $phone ) ) {
+		if ( '' === $name || '' === $phone || '' === $message || ! is_email( $email ) || '1' !== $consent ) {
 			chrysotile_contact_redirect( 'error', 'validation' );
+		}
+
+		if ( ! chrysotile_contact_is_valid_phone( $phone ) ) {
+			chrysotile_contact_redirect( 'error', 'invalid_phone' );
 		}
 
 		$entry_id = chrysotile_contact_create_entry(
